@@ -29,21 +29,32 @@ def _main_(args):
     ###############################
 
     # parse annotations of the training set
-    train_imgs, train_labels = parse_annotation(config['train']['train_annot_folder'], 
-                                                config['train']['train_image_folder'], 
+    # Add path
+    
+    dataset_path = config['path']['workspace_root_path'] + config['path']['dataset_path']
+    train_annot_folder_path =  dataset_path + config['train']['train_annot_folder']
+    train_image_folder_path = dataset_path + config['train']['train_image_folder']
+    print('Parse Training Set Annotations from : ' + train_annot_folder_path)
+    train_imgs, train_labels = parse_annotation(train_annot_folder_path, 
+                                                train_image_folder_path, 
                                                 config['model']['labels'])
-
+   
     # parse annotations of the validation set, if any, otherwise split the training set
-    if os.path.exists(config['valid']['valid_annot_folder']):
-        valid_imgs, valid_labels = parse_annotation(config['valid']['valid_annot_folder'], 
-                                                    config['valid']['valid_image_folder'], 
+    if os.path.exists(dataset_path + config['valid']['valid_annot_folder']):
+        valid_annot_folder_path = dataset_path + config['valid']['valid_annot_folder']
+        valid_image_folder_path = dataset_path + config['valid']['valid_image_folder']
+        print('Parse Validation Set Annotations from : ' + valid_annot_folder_path)
+        valid_imgs, valid_labels = parse_annotation(valid_annot_folder_path, 
+                                                    valid_image_folder_path, 
                                                     config['model']['labels'])
     else:
-        train_valid_split = int(0.8*len(train_imgs))
-        np.random.shuffle(train_imgs)
+        print("Error Please use seperate validation set")
+        assert(False)
+        # train_valid_split = int(0.8*len(train_imgs))
+        # np.random.shuffle(train_imgs)
 
-        valid_imgs = train_imgs[train_valid_split:]
-        train_imgs = train_imgs[:train_valid_split]
+        # valid_imgs = train_imgs[train_valid_split:]
+        # train_imgs = train_imgs[:train_valid_split]
 
     if len(config['model']['labels']) > 0:
         overlap_labels = set(config['model']['labels']).intersection(set(train_labels.keys()))
@@ -73,13 +84,20 @@ def _main_(args):
     #   Load the pretrained weights (if any) 
     ###############################    
 
-    if os.path.exists(config['train']['pretrained_weights']):
-        print("Loading pre-trained weights in", config['train']['pretrained_weights'])
-        yolo.load_weights(config['train']['pretrained_weights'])
+    # if os.path.exists(config['train']['pretrained_weights']):
+    #     print("Loading pre-trained weights in", config['train']['pretrained_weights'])
+    #     yolo.load_weights(config['train']['pretrained_weights'])
+    pretrain_model_path = config['path']['workspace_root_path'] + config['path']['pretrain_weights_path'] + config['train']['pretrained_weights']
+    if config['train']['pretrained_weights'] != "" and os.path.exists(pretrain_model_path):
+        print("Loading pre-trained (previous) weights  in ", pretrain_model_path)
+        yolo.load_weights(pretrain_model_path)
+
+
 
     ###############################
     #   Start the training process 
     ###############################
+    saved_weights_name = config['path']['models_save_path'] + config['train']['saved_weights_name']
 
     yolo.train(train_imgs         = train_imgs,
                valid_imgs         = valid_imgs,
@@ -93,7 +111,7 @@ def _main_(args):
                no_object_scale    = config['train']['no_object_scale'],
                coord_scale        = config['train']['coord_scale'],
                class_scale        = config['train']['class_scale'],
-               saved_weights_name = config['train']['saved_weights_name'],
+               saved_weights_name = saved_weights_name,
                debug              = config['train']['debug'])
 
 if __name__ == '__main__':

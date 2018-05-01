@@ -8,13 +8,14 @@ from keras.applications import InceptionV3
 from keras.applications.vgg16 import VGG16
 from keras.applications.resnet50 import ResNet50
 
-FULL_YOLO_BACKEND_PATH  = "full_yolo_backend.h5"   # should be hosted on a server
-TINY_YOLO_BACKEND_PATH  = "tiny_yolo_backend.h5"   # should be hosted on a server
-SQUEEZENET_BACKEND_PATH = "squeezenet_backend.h5"  # should be hosted on a server
-MOBILENET_BACKEND_PATH  = "mobilenet_backend.h5"   # should be hosted on a server
-INCEPTION3_BACKEND_PATH = "inception_backend.h5"   # should be hosted on a server
-VGG16_BACKEND_PATH      = "vgg16_backend.h5"       # should be hosted on a server
-RESNET50_BACKEND_PATH   = "resnet50_backend.h5"    # should be hosted on a server
+PRETRAIN_WEIGHTS_PATH = "/home/kandithws/ait_workspace/MachineLearning/pretrained_models/"
+FULL_YOLO_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "full_yolo_backend.h5"   # should be hosted on a server
+TINY_YOLO_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "tiny_yolo_backend.h5"   # should be hosted on a server
+SQUEEZENET_BACKEND_PATH = PRETRAIN_WEIGHTS_PATH + "squeezenet_backend.h5"  # should be hosted on a server
+MOBILENET_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "mobilenet_backend.h5"   # should be hosted on a server
+INCEPTION3_BACKEND_PATH = PRETRAIN_WEIGHTS_PATH + "inception_backend.h5"   # should be hosted on a server
+VGG16_BACKEND_PATH      = PRETRAIN_WEIGHTS_PATH + "vgg16_backend.h5"       # should be hosted on a server
+RESNET50_BACKEND_PATH   = PRETRAIN_WEIGHTS_PATH + "resnet50_backend.h5"    # should be hosted on a server
 
 class BaseFeatureExtractor(object):
     """docstring for ClassName"""
