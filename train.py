@@ -27,7 +27,8 @@ def _main_(args):
     ###############################
     #   Parse the annotations 
     ###############################
-
+    assert(os.environ["PRETRAIN_BACKEND_PATH"])
+    print("Pretrain Backend Path: " + os.environ["PRETRAIN_BACKEND_PATH"])
     # parse annotations of the training set
     # Add path
     
