@@ -9,20 +9,28 @@ from keras.applications.vgg16 import VGG16
 from keras.applications.resnet50 import ResNet50
 import os
 # PRETRAIN_WEIGHTS_PATH = "/home/kandithws/ait_workspace/MachineLearning/pretrained_models/"
-PRETRAIN_WEIGHTS_PATH = os.environ['PRETRAIN_BACKEND_PATH']
-FULL_YOLO_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "full_yolo_backend.h5"   # should be hosted on a server
-TINY_YOLO_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "tiny_yolo_backend.h5"   # should be hosted on a server
-SQUEEZENET_BACKEND_PATH = PRETRAIN_WEIGHTS_PATH + "squeezenet_backend.h5"  # should be hosted on a server
-MOBILENET_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "mobilenet_backend.h5"   # should be hosted on a server
-INCEPTION3_BACKEND_PATH = PRETRAIN_WEIGHTS_PATH + "inception_backend.h5"   # should be hosted on a server
-VGG16_BACKEND_PATH      = PRETRAIN_WEIGHTS_PATH + "vgg16_backend.h5"       # should be hosted on a server
-RESNET50_BACKEND_PATH   = PRETRAIN_WEIGHTS_PATH + "resnet50_backend.h5"    # should be hosted on a server
+# PRETRAIN_WEIGHTS_PATH = os.environ['PRETRAIN_BACKEND_PATH']
+# FULL_YOLO_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "full_yolo_backend.h5"   # should be hosted on a server
+# TINY_YOLO_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "tiny_yolo_backend.h5"   # should be hosted on a server
+# SQUEEZENET_BACKEND_PATH = PRETRAIN_WEIGHTS_PATH + "squeezenet_backend.h5"  # should be hosted on a server
+# MOBILENET_BACKEND_PATH  = PRETRAIN_WEIGHTS_PATH + "mobilenet_backend.h5"   # should be hosted on a server
+# INCEPTION3_BACKEND_PATH = PRETRAIN_WEIGHTS_PATH + "inception_backend.h5"   # should be hosted on a server
+# VGG16_BACKEND_PATH      = PRETRAIN_WEIGHTS_PATH + "vgg16_backend.h5"       # should be hosted on a server
+# RESNET50_BACKEND_PATH   = PRETRAIN_WEIGHTS_PATH + "resnet50_backend.h5"    # should be hosted on a server
+# PRETRAIN_WEIGHTS_PATH = os.environ['PRETRAIN_BACKEND_PATH']
+FULL_YOLO_BACKEND_PATH  = "full_yolo_backend.h5"   # should be hosted on a server
+TINY_YOLO_BACKEND_PATH  = "tiny_yolo_backend.h5"   # should be hosted on a server
+SQUEEZENET_BACKEND_PATH = "squeezenet_backend.h5"  # should be hosted on a server
+MOBILENET_BACKEND_PATH  = "mobilenet_backend.h5"   # should be hosted on a server
+INCEPTION3_BACKEND_PATH = "inception_backend.h5"   # should be hosted on a server
+VGG16_BACKEND_PATH      = "vgg16_backend.h5"       # should be hosted on a server
+RESNET50_BACKEND_PATH   = "resnet50_backend.h5"    # should be hosted on a server
 
 class BaseFeatureExtractor(object):
     """docstring for ClassName"""
 
     # to be defined in each subclass
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         raise NotImplementedError("error message")
 
     # to be defined in each subclass
@@ -37,7 +45,7 @@ class BaseFeatureExtractor(object):
 
 class FullYoloFeature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         input_image = Input(shape=(input_size, input_size, 3))
 
         # the function to implement the orgnization layer (thanks to github.com/allanzelener/YAD2K)
@@ -166,14 +174,17 @@ class FullYoloFeature(BaseFeatureExtractor):
         x = LeakyReLU(alpha=0.1)(x)
 
         self.feature_extractor = Model(input_image, x)  
-        self.feature_extractor.load_weights(FULL_YOLO_BACKEND_PATH)
+        if pretrain_backend_model is None:
+            self.feature_extractor.load_weights(os.environ['PRETRAIN_BACKEND_PATH'] + FULL_YOLO_BACKEND_PATH)
+        else:
+            self.feature_extractor.load_weights(pretrain_backend_model)
 
     def normalize(self, image):
         return image / 255.
 
 class TinyYoloFeature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         input_image = Input(shape=(input_size, input_size, 3))
 
         # Layer 1
@@ -202,18 +213,24 @@ class TinyYoloFeature(BaseFeatureExtractor):
             x = LeakyReLU(alpha=0.1)(x)
 
         self.feature_extractor = Model(input_image, x)  
-        self.feature_extractor.load_weights(TINY_YOLO_BACKEND_PATH)
+        if pretrain_backend_model is None:
+            self.feature_extractor.load_weights(os.environ['PRETRAIN_BACKEND_PATH'] + TINY_YOLO_BACKEND_PATH)
+        else:
+            self.feature_extractor.load_weights(pretrain_backend_model)
 
     def normalize(self, image):
         return image / 255.
 
 class MobileNetFeature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         input_image = Input(shape=(input_size, input_size, 3))
 
         mobilenet = MobileNet(input_shape=(224,224,3), include_top=False)
-        mobilenet.load_weights(MOBILENET_BACKEND_PATH)
+        # if pretrain_backend_model is None:
+        #     mobilenet.load_weights(os.environ['PRETRAIN_BACKEND_PATH'] + MOBILENET_BACKEND_PATH)
+        # else:
+        #     mobilenet.load_weights(pretrain_backend_model)
 
         x = mobilenet(input_image)
 
@@ -228,7 +245,7 @@ class MobileNetFeature(BaseFeatureExtractor):
 
 class SqueezeNetFeature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
 
         # define some auxiliary variables and the fire module
         sq1x1  = "squeeze1x1"
@@ -273,7 +290,10 @@ class SqueezeNetFeature(BaseFeatureExtractor):
         x = fire_module(x, fire_id=9, squeeze=64, expand=256)
 
         self.feature_extractor = Model(input_image, x)  
-        self.feature_extractor.load_weights(SQUEEZENET_BACKEND_PATH)
+        if pretrain_backend_model is None:
+            self.feature_extractor.load_weights(os.environ['PRETRAIN_BACKEND_PATH'] + SQUEEZENET_BACKEND_PATH)
+        else:
+            self.feature_extractor.load_weights(pretrain_backend_model)
 
     def normalize(self, image):
         image = image[..., ::-1]
@@ -287,11 +307,11 @@ class SqueezeNetFeature(BaseFeatureExtractor):
 
 class Inception3Feature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         input_image = Input(shape=(input_size, input_size, 3))
 
         inception = InceptionV3(input_shape=(input_size,input_size,3), include_top=False)
-        inception.load_weights(INCEPTION3_BACKEND_PATH)
+        # inception.load_weights(INCEPTION3_BACKEND_PATH)
 
         x = inception(input_image)
 
@@ -306,7 +326,7 @@ class Inception3Feature(BaseFeatureExtractor):
 
 class VGG16Feature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         vgg16 = VGG16(input_shape=(input_size, input_size, 3), include_top=False)
         #vgg16.load_weights(VGG16_BACKEND_PATH)
 
@@ -324,7 +344,7 @@ class VGG16Feature(BaseFeatureExtractor):
 
 class ResNet50Feature(BaseFeatureExtractor):
     """docstring for ClassName"""
-    def __init__(self, input_size):
+    def __init__(self, input_size, pretrain_backend_model=None):
         resnet50 = ResNet50(input_shape=(input_size, input_size, 3), include_top=False)
         resnet50.layers.pop() # remove the average pooling layer
         #resnet50.load_weights(RESNET50_BACKEND_PATH)

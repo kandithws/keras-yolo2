@@ -12,13 +12,15 @@ from keras.optimizers import SGD, Adam, RMSprop
 from preprocessing import BatchGenerator
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from backend import TinyYoloFeature, FullYoloFeature, MobileNetFeature, SqueezeNetFeature, Inception3Feature, VGG16Feature, ResNet50Feature
+import time
 
 class YOLO(object):
     def __init__(self, backend,
                        input_size, 
                        labels, 
                        max_box_per_image,
-                       anchors):
+                       anchors,
+                       backend_model_path=None):
 
         self.input_size = input_size
         
@@ -39,19 +41,19 @@ class YOLO(object):
         self.true_boxes = Input(shape=(1, 1, 1, max_box_per_image , 4))  
 
         if backend == 'Inception3':
-            self.feature_extractor = Inception3Feature(self.input_size)  
+            self.feature_extractor = Inception3Feature(self.input_size, backend_model_path)  
         elif backend == 'SqueezeNet':
-            self.feature_extractor = SqueezeNetFeature(self.input_size)        
+            self.feature_extractor = SqueezeNetFeature(self.input_size, backend_model_path)        
         elif backend == 'MobileNet':
-            self.feature_extractor = MobileNetFeature(self.input_size)
+            self.feature_extractor = MobileNetFeature(self.input_size, backend_model_path)
         elif backend == 'Full Yolo':
-            self.feature_extractor = FullYoloFeature(self.input_size)
+            self.feature_extractor = FullYoloFeature(self.input_size, backend_model_path)
         elif backend == 'Tiny Yolo':
-            self.feature_extractor = TinyYoloFeature(self.input_size)
+            self.feature_extractor = TinyYoloFeature(self.input_size, backend_model_path)
         elif backend == 'VGG16':
-            self.feature_extractor = VGG16Feature(self.input_size)
+            self.feature_extractor = VGG16Feature(self.input_size, backend_model_path)
         elif backend == 'ResNet50':
-            self.feature_extractor = ResNet50Feature(self.input_size)
+            self.feature_extractor = ResNet50Feature(self.input_size, backend_model_path)
         else:
             raise Exception('Architecture not supported! Only support Full Yolo, Tiny Yolo, MobileNet, SqueezeNet, VGG16, ResNet50, and Inception3 at the moment!')
 
@@ -367,14 +369,18 @@ class YOLO(object):
         # gather all detections and annotations
         all_detections     = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
         all_annotations    = [[None for i in range(generator.num_classes())] for j in range(generator.size())]
-
+        # print("Start Evaluation Size of " + len(generator) )
+        count = 0
+        total_pred_time = 0.0
+        # total_count = len(generator)
         for i in range(generator.size()):
             raw_image = generator.load_image(i)
             raw_height, raw_width, raw_channels = raw_image.shape
 
             # make the boxes and the labels
+            start_time = time.time()
             pred_boxes  = self.predict(raw_image)
-
+            total_pred_time += (time.time() - start_time)
             
             score = np.array([box.score for box in pred_boxes])
             pred_labels = np.array([box.label for box in pred_boxes])        
@@ -398,10 +404,15 @@ class YOLO(object):
             # copy detections to all_annotations
             for label in range(generator.num_classes()):
                 all_annotations[i][label] = annotations[annotations[:, 4] == label, :4].copy()
-                
+            if count % 100 == 0:
+                print("Predicting %d / %d images" % (count, 5000))
+            count += 1
+        
         # compute mAP by comparing all detections and all annotations
         average_precisions = {}
-        
+        print("Calculating Evaluation Output .....")
+        bb_count = 0
+        total_max_overlap = 0.0 # IOU
         for label in range(generator.num_classes()):
             false_positives = np.zeros((0,))
             true_positives  = np.zeros((0,))
@@ -424,7 +435,14 @@ class YOLO(object):
 
                     overlaps            = compute_overlap(np.expand_dims(d, axis=0), annotations)
                     assigned_annotation = np.argmax(overlaps, axis=1)
-                    max_overlap         = overlaps[0, assigned_annotation]
+                    max_overlap         = overlaps[0, assigned_annotation] # select 1 annotation box that prediction belongs to
+
+                    # Calculate Average IOU for whole validation set
+                    if assigned_annotation not in detected_annotations:
+                        total_max_overlap += max_overlap
+                    
+                    bb_count += 1
+
 
                     if max_overlap >= iou_threshold and assigned_annotation not in detected_annotations:
                         false_positives = np.append(false_positives, 0)
@@ -455,6 +473,9 @@ class YOLO(object):
             # compute average precision
             average_precision  = compute_ap(recall, precision)  
             average_precisions[label] = average_precision
+            print("Total Validated Images: {}".format(count))
+            print("Average Prediction Time per Images: {}".format(total_pred_time / float(count) ))
+            print("Average IOU: {}".format(total_max_overlap / float(bb_count) ) )
 
         return average_precisions    
 

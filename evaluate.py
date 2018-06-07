@@ -3,7 +3,7 @@
 import argparse
 import os
 import numpy as np
-from preprocessing import parse_annotation
+from preprocessing import parse_annotation, BatchGenerator
 from frontend import YOLO
 import json
 
@@ -35,10 +35,6 @@ def _main_(args):
     dataset_path = config['path']['dataset_path']
     train_annot_folder_path =  dataset_path + config['train']['train_annot_folder']
     train_image_folder_path = dataset_path + config['train']['train_image_folder']
-    print('Parse Training Set Annotations from : ' + train_annot_folder_path)
-    train_imgs, train_labels = parse_annotation(train_annot_folder_path, 
-                                                train_image_folder_path, 
-                                                config['model']['labels'])
    
     # parse annotations of the validation set, if any, otherwise split the training set
     if os.path.exists(dataset_path + config['valid']['valid_annot_folder']):
@@ -56,20 +52,6 @@ def _main_(args):
 
         # valid_imgs = train_imgs[train_valid_split:]
         # train_imgs = train_imgs[:train_valid_split]
-
-    if len(config['model']['labels']) > 0:
-        overlap_labels = set(config['model']['labels']).intersection(set(train_labels.keys()))
-
-        print('Seen labels:\t', train_labels)
-        print('Given labels:\t', config['model']['labels'])
-        print('Overlap labels:\t', overlap_labels)           
-
-        if len(overlap_labels) < len(config['model']['labels']):
-            print('Some labels have no annotations! Please revise the list of labels in the config.json file!')
-            return
-    else:
-        print('No labels are provided. Train on all seen labels.')
-        config['model']['labels'] = train_labels.keys()
         
     ###############################
     #   Construct the model 
@@ -83,39 +65,56 @@ def _main_(args):
                 backend_model_path = config['model']['backend_model'])
 
     ###############################
-    #   Load the pretrained weights (previously trained model, that we wish to resume training) (if any) 
+    #   Load the pretrained weights (if any) 
     ###############################    
 
-    pretrain_model_path = config['train']['previous_model']
+    # if os.path.exists(config['train']['pretrained_weights']):
+    #     print("Loading pre-trained weights in", config['train']['pretrained_weights'])
+    #     yolo.load_weights(config['train']['pretrained_weights'])
+    pretrain_model_path = config['path']['models_save_path'] + config['train']['previous_model']
+    print("Loading pre-trained (previous) weights  in ", pretrain_model_path)
     if config['train']['previous_model'] != "" and os.path.exists(pretrain_model_path):
-        print("Loading pre-trained (previous) weights  in ", pretrain_model_path)
+        print("PREVIOUS MODEL FOUND!!!!!!!")
         yolo.load_weights(pretrain_model_path)
-    elif config['train']['previous_model'] != "" and not os.path.exists(pretrain_model_path):
-        print("Fail to Load pre-trained (previous) weights  in %s, ABORT! " % pretrain_model_path)
-        exit(-1)
+    else:
+        print("PREVIOUS MODEL NOT FOUND!!!!!!!")
+        assert(False)
 
 
 
-    ###############################
-    #   Start the training process 
-    ###############################
-    saved_weights_name = config['path']['models_save_path'] + config['train']['saved_weights_name']
+    generator_config = {
+            'IMAGE_H'         : yolo.input_size, 
+            'IMAGE_W'         : yolo.input_size,
+            'GRID_H'          : yolo.grid_h,  
+            'GRID_W'          : yolo.grid_w,
+            'BOX'             : yolo.nb_box,
+            'LABELS'          : yolo.labels,
+            'CLASS'           : len(yolo.labels),
+            'ANCHORS'         : yolo.anchors,
+            'BATCH_SIZE'      : config['train']['batch_size'],
+            'TRUE_BOX_BUFFER' : yolo.max_box_per_image,
+        }  
 
-    yolo.train(train_imgs         = train_imgs,
-               valid_imgs         = valid_imgs,
-               train_times        = config['train']['train_times'],
-               valid_times        = config['valid']['valid_times'],
-               nb_epochs          = config['train']['nb_epochs'], 
-               learning_rate      = config['train']['learning_rate'], 
-               batch_size         = config['train']['batch_size'],
-               warmup_epochs      = config['train']['warmup_epochs'],
-               object_scale       = config['train']['object_scale'],
-               no_object_scale    = config['train']['no_object_scale'],
-               coord_scale        = config['train']['coord_scale'],
-               class_scale        = config['train']['class_scale'],
-               saved_weights_name = saved_weights_name,
-               debug              = config['train']['debug'])
+    valid_generator = BatchGenerator(valid_imgs, 
+                                     generator_config, 
+                                     norm=yolo.feature_extractor.normalize,
+                                     jitter=False)  
+    fout = open(config['evaluate']['output_file'], "w+")
+    average_precisions = yolo.evaluate(valid_generator,
+                                        max_detections = config['evaluate']['max_detections'],
+                                        save_path=None)
+      
+    
+        # print evaluation
+    for label, average_precision in average_precisions.items():
+        print(yolo.labels[label], '{:.4f}'.format(average_precision))
+        fout.write(str(yolo.labels[label]) + '{:.4f}'.format(average_precision) + '\n' )
+    
+    print('mAP: {:.4f}'.format(sum(average_precisions.values()) / len(average_precisions))) 
+    fout.write('mAP: {:.4f} \n'.format(sum(average_precisions.values()) / len(average_precisions)))
+    fout.close() 
 
 if __name__ == '__main__':
     args = argparser.parse_args()
     _main_(args)
+
