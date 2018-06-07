@@ -99,8 +99,10 @@ def _main_(args):
     ###############################
     #   Start the training process 
     ###############################
-    saved_weights_name = config['path']['models_save_path'] + config['train']['saved_weights_name']
-
+    save_weight_path = config['path']['workspace_root_path'] + config['path']['models_save_path'] 
+    saved_weights_name = save_weight_path + config['train']['saved_weights_name']
+    assert(os.path.isdir(save_weight_path))
+    print("Saving Weights at: " + save_weight_path)
     yolo.train(train_imgs         = train_imgs,
                valid_imgs         = valid_imgs,
                train_times        = config['train']['train_times'],
