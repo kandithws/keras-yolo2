@@ -39,6 +39,9 @@ Virtualenv:
 
 `activate_env`
 
+`(<virtual_enviroment_name>) pip3 install Cython`
+`(<virtual_enviroment_name>) pip3 install -r requirements.txt`
+
 
 
 ### 1. Data preparation
