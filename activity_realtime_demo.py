@@ -38,10 +38,11 @@ DETECTION_MODEL_PATH = '/home/kandithws/ait_workspace/MachineLearning/models/' +
 
 ACTIVITY_MODEL_PATH = '/home/kandithws/ait_workspace/MachineLearning/models/' + 'activity.h5'
 
-CAMERA_DEVICE = 0 # opencv VideoCapture's device
+CAMERA_DEVICE = 1 # opencv VideoCapture's device
 SET_CAM_RESOLUTION=False
 CAM_RESOLUTION_WIDTH=640
 CAM_RESOLUTION_HEIGHT=480
+MIN_DETECTION_CONFIDENCE = 0.5
 
 def create_activity_model():
     input_shape = (300, 300, 3)
@@ -95,7 +96,7 @@ def get_predict_labels(predictions):
 
 
 
-MIN_CONFIDENCE = 0.5
+
 if __name__ == '__main__':
     yolo = YOLO(backend             = config['model']['backend'],
             input_size          = config['model']['input_size'], 
@@ -123,7 +124,7 @@ if __name__ == '__main__':
 
             if len(boxes) > 0:
                 for b in boxes:
-                    if b.score >= MIN_CONFIDENCE:
+                    if b.score >= MIN_DETECTION_CONFIDENCE:
                         filtered_boxes.append(b)
 
                 boxes = filtered_boxes

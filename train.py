@@ -49,13 +49,13 @@ def _main_(args):
                                                     valid_image_folder_path, 
                                                     config['model']['labels'])
     else:
-        print("Error Please use seperate validation set")
-        assert(False)
-        # train_valid_split = int(0.8*len(train_imgs))
-        # np.random.shuffle(train_imgs)
+        print("Split Training Set as Validation set 80:20")
+        #assert(False)
+        train_valid_split = int(0.8*len(train_imgs))
+        np.random.shuffle(train_imgs)
 
-        # valid_imgs = train_imgs[train_valid_split:]
-        # train_imgs = train_imgs[:train_valid_split]
+        valid_imgs = train_imgs[train_valid_split:]
+        train_imgs = train_imgs[:train_valid_split]
 
     if len(config['model']['labels']) > 0:
         overlap_labels = set(config['model']['labels']).intersection(set(train_labels.keys()))

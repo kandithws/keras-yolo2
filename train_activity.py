@@ -1,5 +1,5 @@
 import os
-from __future__ import print_function
+# from __future__ import print_function
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -10,17 +10,15 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 
 from keras.preprocessing.image import ImageDataGenerator
 
-train_dir = '/home/temporary/Downloads/train'
-test_dir  = '/home/temporary/Downloads/test'
+train_dir = '/home/kandithws/ait_workspace/MachineLearning/datasets/activity_dataset/train'
+test_dir  = '/home/kandithws/ait_workspace/MachineLearning/datasets/activity_dataset/test'
 saved_weights_name='best_weights.h5'
 
-# EVALUATE_AFTER_FINISH=
+PREVIOUS_MODEL=None # path to previously trained model; for continue training
 
-PREVIOUS_MODEL=None
-
-nb_train_samples = 200
+nb_train_samples = 200 # samples per epoch
 nb_test_samples = 50
-batch_size = 2
+batch_size = 20
 num_classes = 7
 epochs = 30
 width =300
@@ -29,12 +27,12 @@ height = 300
 datagen = ImageDataGenerator(rescale=1./255, rotation_range=20, width_shift_range=0.2, height_shift_range=0.2)
 training_generator = datagen.flow_from_directory(train_dir,
     target_size=(width, height),
-    batch_size=20,
+    batch_size=batch_size,
     class_mode="categorical")
 
 testing_generator = datagen.flow_from_directory(test_dir,
     target_size=(width, height),
-    batch_size=20,
+    batch_size=batch_size,
     class_mode="categorical")
 
 if K.image_data_format() == 'channels_first':

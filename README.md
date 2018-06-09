@@ -1,58 +1,50 @@
-# YOLOv2 in Keras and Applications
+# YOLOv2 in Keras and Applications for Cascading People Activity Recognition
 
-This repo contains the implementation of YOLOv2 in Keras with Tensorflow backend. It supports training YOLOv2 network with various backends such as MobileNet and InceptionV3. Links to demo applications are shown below. Check out https://experiencor.github.io/yolo_demo/demo.html for a Raccoon Detector demo run entirely in brower with DeepLearn.js and MobileNet backend (it somehow breaks in Window). Source code of this demo is located at https://git.io/vF7vG.
+This repo contains the implementation of YOLOv2 in Keras with Tensorflow backend. It supports training YOLOv2 network with various backends such as MobileNet and InceptionV3.
 
-## Todo list:
-- [x] Warmup training
-- [x] Raccoon detection, Self-driving car, and Kangaroo detection
-- [x] SqueezeNet, MobileNet, InceptionV3, and ResNet50 backends
-- [x] Support python 2.7 and 3.6
-- [ ] Multiple-GPU training
-- [ ] Multiscale training
-- [ ] mAP Evaluation
+This forked repository is modified for AT:70.9022 Machine Learning Course Project.
 
-## Some example applications (click for videos):
+Here is the [project paper](https://drive.google.com/open?id=1Mh3r7UGbt5j-X-NNTaDVJZA_nNAduO4L) for this implementation.
 
-### Raccon detection
-<a href="https://www.youtube.com/watch?v=aibuvj2-zxA" rel="some text"><p align="center"><img src="https://i.imgur.com/6okeDjz.jpg" height="300"></p></a>
-
-Dataset => https://github.com/experiencor/raccoon_dataset
-
-### Kangaroo detection
-<a href="https://youtu.be/vjmFzEP1qZw?t=34" rel="some text"><p align="center"><img src="https://i.imgur.com/v606VZX.jpg" height="300"></p></a>
-
-Dataset => https://github.com/experiencor/kangaroo
-
-### Self-driving Car
-<a href="https://www.youtube.com/watch?v=oYCaILZxEWM" rel="some text"><p align="center"><img src="https://i.imgur.com/kEc9ptL.jpg" height="300"></p></a>
-
-Dataset => http://cocodataset.org/#detections-challenge2017
-
-### Red blod cell detection
-<a href="https://www.youtube.com/watch?v=oYCaILZxEWM" rel="some text"><p align="center"><img src="https://i.imgur.com/1vmIJKL.jpg" height="300"></p></a>
-
-Dataset => https://github.com/cosmicad/dataset
-
-### Hand detection
-<a href="https://www.youtube.com/watch?v=p3-3kN_fIz0" rel="some text"><p align="center"><img src="https://i.imgur.com/75imQQz.jpg" height="300"></p></a>
-
-Dataset => http://cvrr.ucsd.edu/vivachallenge/index.php/hands/hand-detection/
+Original Implementation can be found at https://github.com/experiencor/keras-yolo2 .
 
 ## Usage for python code
 
 ### 0. Requirement
 
-python 2.7
+python 3.x
 
 keras >= 2.0.8
 
 imgaug
 
+tensorflow-gpu >= 1.6.0 (or cpu)
+
+opencv-python
+
+### *****In order to avoid potential environment configuration conflicts, we recommend to use virtualenv or Docker
+
+Virtualenv:
+
+`sudo apt-get install python3-pip`
+
+`sudo pip3 install virtualenv`
+
+`virtualenv --python=python3 --no-site-packages <virtual_enviroment_name>`
+
+
+`echo "alias activate_env=\"source ~/<virtual_enviroment_name>/bin/activate\"" >> ~/.bashrc`
+
+`source .bashrc`
+
+`activate_env`
+
+
+
 ### 1. Data preparation
-Download the Raccoon dataset from from https://github.com/experiencor/raccoon_dataset.
 
 Organize the dataset into 4 folders:
-
+#### 1.1. People Detection Dataset
 + train_image_folder <= the folder that contains the train images.
 
 + train_annot_folder <= the folder that contains the train annotations in VOC format.
@@ -60,28 +52,64 @@ Organize the dataset into 4 folders:
 + valid_image_folder <= the folder that contains the validation images.
 
 + valid_annot_folder <= the folder that contains the validation annotations in VOC format.
+
+##### 1.1.1 If you are using [MicrosoftCOCO](http://cocodataset.org) dataset for People Detection
+
+Use `coco2pascal_person.py` to convert COCO annotations to VOC format. It filters only "Person" category label. You can select either coco 2014 or 2017 dataset.
+
+Usage:
+
+  `python3 coco2pascal_person.py create_annotations <COCO_annotations_folder> <subset: train/val> <output_folder> <coco_dataset_year (default 2017)>`
+
+Requirements:
+
+   `pip3 install path.py baker scipy lxml`
+
+   `pip3 install Cython`
+
+   `pip3 install cytoolz`
+   
+#### 1.2. Activity Recognition Data format
+
+Since we use [ImageDataGenerator.flow_from_directory](https://keras.io/preprocessing/image/) API from Keras, the images dataset should be organized in classes: each subfolder is the class name containing its class images. 
+
+The training set and the validation set should be seperated in advance.
+
+The original dataset we used to train this model is [Standford 40 Actions](http://vision.stanford.edu/Datasets/40actions.html) with selected 7 classes actions (applauding, drinking, jumping, phoning, reading, running, waving hands).
+
+
+
+
+
+
     
-There is a one-to-one correspondence by file name between images and annotations. If the validation set is empty, the training set will be automatically splitted into the training set and validation set using the ratio of 0.8.
 
 ### 2. Edit the configuration file
+
+#### 2.1 For People Detection
 The configuration file is a json file, which looks like this:
 
 ```python
 {
     "model" : {
-        "architecture":         "Full Yolo",    # "Tiny Yolo" or "Full Yolo" or "MobileNet" or "SqueezeNet" or "Inception3"
+        "architecture":         "Full Yolo",    # "Tiny Yolo" or "Full Yolo" or "MobileNet" or   "SqueezeNet" or "Inception3" or "ResNet50"
         "input_size":           416,
         "anchors":              [0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828],
         "max_box_per_image":    10,        
-        "labels":               ["raccoon"]
+        "labels":               ["person"],
+        "backend_model": "/home/kandithws/ait_workspace/MachineLearning/pretrained_models/full_yolo_backend.h5" # Pretrained weights for backend model (i.e. from Imagenet), required for "Full Yolo", "Tiny Yolo", "Inception3" and "SqueezeNet". For other models will directly download from Keras (internet required)
+    },
+    "path" :{
+        "dataset_path": "/home/kandithws/ait_workspace/MachineLearning/datasets/coco/", # path to the root of dataset folder in which has annotations and image folder
+        "models_save_path": "/home/kandithws/ait_workspace/MachineLearning/models/" # path to save a trained model and load a previously trained model.
     },
 
     "train": {
-        "train_image_folder":   "/home/andy/data/raccoon_dataset/images/",
-        "train_annot_folder":   "/home/andy/data/raccoon_dataset/anns/",      
+        "train_image_folder":   "train2017/", # should be inside dataset_path
+        "train_annot_folder":   "voc_annotations_train/",  # should be inside dataset_path     
           
-        "train_times":          10,             # the number of time to cycle through the training set, useful for small datasets
-        "pretrained_weights":   "",             # specify the path of the pretrained weights, but it's fine to start from scratch
+        "train_times":          1,             # the number of time to cycle through the training set, useful for small datasets
+        "previous_model":   "",             # specify the path of the prevoiusly trained weights, but it's fine to start from scratch (will randomize the initial weight instead)
         "batch_size":           16,             # the number of images to read in each batch
         "learning_rate":        1e-4,           # the base learning rate of the default Adam rate scheduler
         "nb_epoch":             50,             # number of epoches
@@ -96,8 +124,9 @@ The configuration file is a json file, which looks like this:
     },
 
     "valid": {
-        "valid_image_folder":   "",
-        "valid_annot_folder":   "",
+        # if validation set is not specified, will use 80:20 of the training set
+        "valid_image_folder":   "val2017/",
+        "valid_annot_folder":   "voc_annotations_val/",
 
         "valid_times":          1
     }
@@ -105,19 +134,16 @@ The configuration file is a json file, which looks like this:
 
 ```
 
-The model section defines the type of the model to construct as well as other parameters of the model such as the input image size and the list of anchors. The ```labels``` setting lists the labels to be trained on. Only images, which has labels being listed, are fed to the network. The rest images are simply ignored. By this way, a Dog Detector can easily be trained using VOC or COCO dataset by setting ```labels``` to ```['dog']```.
+The model section defines the type of the model to construct as well as other parameters of the model such as the input image size and the list of anchors. The ```labels``` setting lists the labels to be trained on. Only images, which has labels being listed, are fed to the network. The rest images are simply ignored. By this way, a Person Detector can easily be trained using VOC or COCO dataset by setting ```labels``` to ```['person']```.
 
-Download pretrained weights for backend (tiny yolo, full yolo, squeezenet, mobilenet, and inceptionV3) at:
+Download pretrained weights for backend_model (tiny yolo, full yolo, squeezenet, mobilenet, and inceptionV3) at:
 
 https://1drv.ms/f/s!ApLdDEW3ut5fec2OzK4S4RpT-SU
 
-**These weights must be put in the root folder of the repository. They are the pretrained weights for the backend only and will be loaded during model creation. The code does not work without these weights.**
 
-The link to the pretrained weights for the whole model (both frontend and backend) of the raccoon detector can be downloaded at:
 
-https://1drv.ms/f/s!ApLdDEW3ut5feoZAEUwmSMYdPlY
 
-These weights can be used as the pretrained weights for any one class object detectors.
+
 
 ### 3. Generate anchors for your dataset (optional)
 
@@ -127,18 +153,24 @@ Copy the generated anchors printed on the terminal to the ```anchors``` setting 
 
 ### 4. Start the training process
 
+#### 4.1 People Detection Model
+
 `python train.py -c config.json`
 
 By the end of this process, the code will write the weights of the best model to file best_weights.h5 (or whatever name specified in the setting "saved_weights_name" in the config.json file). The training process stops when the loss on the validation set is not improved in 3 consecutive epoches.
+
+
+#### 4.2 Activity Recognition Model
+
+Use `train_activity.py`
+
+Parameters configurations can be modified directly in the file.
+
 
 ### 5. Perform detection using trained weights on an image by running
 `python predict.py -c config.json -w /path/to/best_weights.h5 -i /path/to/image/or/video`
 
 It carries out detection on the image and write the image with detected bounding boxes to the same folder.
-
-## Usage for jupyter notebook
-
-Refer to the notebook (https://github.com/experiencor/basic-yolo-keras/blob/master/Yolo%20Step-by-Step.ipynb) for a complete walk-through implementation of YOLOv2 from scratch (training, testing, and scoring).
 
 ## Evaluation of the current implementation:
 
@@ -147,6 +179,16 @@ Refer to the notebook (https://github.com/experiencor/basic-yolo-keras/blob/mast
 | COCO train   | COCO val      | 28.6 |    42.1 |
 
 The code to evaluate detection results can be found at https://github.com/experiencor/basic-yolo-keras/issues/27.
+
+
+### 6.Perform realtime prediction People Activity Recognition from WebCam
+
+Please download our trained activity models from 
+here: https://drive.google.com/open?id=143OFmoPiFhDpQ-VvBZnm4QM5p0x26oie (activity.h5 + 1 other model)
+
+Configurations path to the model (DETECTION_MODEL_PATH, ACTIVITY_MODEL_PATH) inside
+`activity_realtime_demo.py` and run it.
+
 
 ## Copyright
 
