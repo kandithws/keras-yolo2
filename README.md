@@ -1,10 +1,15 @@
 # YOLOv2 in Keras and Applications for Cascading People Activity Recognition
 
+![alt text](pipeline_process.png)
+
+
 This repo contains the implementation of YOLOv2 in Keras with Tensorflow backend. It supports training YOLOv2 network with various backends such as MobileNet and InceptionV3.
 
 This forked repository is modified for AT:70.9022 Machine Learning Course Project.
 
 Here is the [project paper](https://drive.google.com/open?id=1Mh3r7UGbt5j-X-NNTaDVJZA_nNAduO4L) for this implementation.
+
+![alt text](sample_output.png)
 
 Original Implementation can be found at https://github.com/experiencor/keras-yolo2 .
 
