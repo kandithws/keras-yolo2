@@ -44,7 +44,10 @@ Virtualenv:
 
 `activate_env`
 
-`(<virtual_enviroment_name>) pip3 install Cython`
+`sudo apt-get install python3-tk`
+ 
+`(<virtual_enviroment_name>) pip3 install Cython numpy`
+
 `(<virtual_enviroment_name>) pip3 install -r requirements.txt`
 
 
